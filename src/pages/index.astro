@@ -1,0 +1,179 @@
+---
+import Base from "../layouts/Base.astro";
+import Scale from "../components/Scale.astro";
+import { architecture, models, site, tiers, variants } from "../data/models";
+import { fmtParams, latest, modelStatus } from "../lib/models";
+
+const smallest = models[0];
+const largest = models[models.length - 1];
+const released = models.filter((m) => modelStatus(m) === "released").length;
+
+const glance = [
+  ["Sizes", `${models.length} models`],
+  ["Range", `${fmtParams(smallest.params)} → ${fmtParams(largest.params)}`],
+  ["Languages", site.languages.join(", ")],
+  ["Variants", variants.filter((v) => !v.upcoming).map((v) => v.name).join(", ")],
+  ["Architecture", architecture.type],
+  ["Released", released ? `${released} of ${models.length}` : "None yet"],
+];
+
+const steps = [
+  {
+    n: "01",
+    title: "Data",
+    body: "French web text from FineWeb-2, English educational text from FineWeb-Edu, and permissively licensed source code. Everything is cleaned, filtered and de-duplicated.",
+    detail: "One 49,152-token tokenizer for both languages and code",
+  },
+  {
+    n: "02",
+    title: "Pre-training",
+    body: "Each size trains from scratch on roughly a hundred tokens per parameter. A warmup-stable-decay schedule lets us extend promising runs without starting over.",
+    detail: "Produces the Base checkpoints",
+  },
+  {
+    n: "03",
+    title: "Instruction tuning",
+    body: "Base models are fine-tuned on French and English conversations, and learn only from the assistant's side of each exchange.",
+    detail: "Produces the Instruct checkpoints",
+  },
+  {
+    n: "04",
+    title: "Release",
+    body: "Weights are exported in a standard Hugging Face format, so they load directly in Transformers, vLLM, llama.cpp and Ollama.",
+    detail: "No custom code needed to run a model",
+  },
+];
+---
+
+<Base>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <p class="hero-kicker"><span lang="fr">Français</span> <span aria-hidden="true">·</span> English</p>
+        <h1>Language models, <em>sized</em> to fit.</h1>
+        <p class="hero-sub">
+          {site.name} trains compact bilingual models for French and English, from fifty million to nine hundred
+          million parameters. They're built to run on the hardware people already own.
+        </p>
+        <div class="hero-actions">
+          <a class="btn" href="/models/">Explore the lineup <span aria-hidden="true">→</span></a>
+          <a class="link-arrow" href="/docs/">Read the docs</a>
+        </div>
+      </div>
+      <aside class="spec-sheet" aria-label="Lineup at a glance">
+        <div class="spec-head"><span>Lineup at a glance</span><span>Generation {latest(largest).version}</span></div>
+        <dl>
+          {glance.map(([k, v]) => <div class="row"><dt>{k}</dt><dd>{v}</dd></div>)}
+        </dl>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section section-tight" aria-label="The lineup by size">
+    <div class="wrap"><Scale /></div>
+  </section>
+
+  <section class="section" id="tiers" aria-labelledby="tiers-title">
+    <div class="wrap section-grid">
+      <div>
+        <h2 id="tiers-title" class="section-title">Three tiers, chosen by where they run.</h2>
+        <p class="section-lede">Most people start with the hardware they have, not a parameter count. So that's how we group the models.</p>
+      </div>
+      <div class="tiers">
+        {tiers.map((t) => (
+          <article class="tier">
+            <div class="tier-top"><h3>{t.name}</h3><span class="range">{t.range}</span></div>
+            <p class="runs">{t.runsOn}</p>
+            <p class="blurb">{t.blurb}</p>
+            <ul>
+              {models.filter((m) => m.tier === t.id).map((m) => (
+                <li><a href={`/models/${m.id}/`}><span>{m.name}</span><span class="mono faint">{fmtParams(m.params)}</span></a></li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="variants-title">
+    <div class="wrap section-grid">
+      <div>
+        <h2 id="variants-title" class="section-title">Every size, more than one way.</h2>
+        <p class="section-lede">Each model ships as a Base checkpoint and an Instruct checkpoint fine-tuned from it. A Code variant comes later.</p>
+      </div>
+      <div class="variants">
+        {variants.map((v) => (
+          <article class:list={["variant", { "is-upcoming": v.upcoming }]}>
+            <h3>{v.name} <small>{v.summary}</small></h3>
+            <p>{v.description}</p>
+            <div class="from">{v.producedBy}</div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="training" aria-labelledby="training-title">
+    <div class="wrap section-grid">
+      <div>
+        <h2 id="training-title" class="section-title">How we train.</h2>
+        <p class="section-lede">One architecture and one codebase cover every size. The same four steps take each model from raw text to a download.</p>
+        <div class="link-row">
+          <a class="link-arrow" href="/docs/training/">Read the training guide →</a>
+          <a class="link-arrow" href={site.links.trainingRepo}>aulvero-train on GitHub</a>
+        </div>
+      </div>
+      <div>
+        <ol class="steps">
+          {steps.map((s) => (
+            <li class="step">
+              <span class="step-n">{s.n}</span>
+              <div>
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+                <span class="step-detail">{s.detail}</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <div class="terminal" aria-label="Training commands">
+          <div class="terminal-bar"><span></span><span></span><span></span><b>aulvero-train</b></div>
+          <pre><code><span class="c"># one command per stage, the same for every size</span>
+<span class="p">$</span> make prepare
+<span class="p">$</span> make pretrain MODEL=kestrel-250m GPUS=8
+<span class="p">$</span> make finetune MODEL=kestrel-250m GPUS=8
+<span class="p">$</span> make export   MODEL=kestrel-250m</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="naming" aria-labelledby="naming-title">
+    <div class="wrap section-grid">
+      <div>
+        <h2 id="naming-title" class="section-title">Reading a model name.</h2>
+        <p class="section-lede">The names follow birds, smallest to largest. The rest of the name says exactly what you're downloading.</p>
+      </div>
+      <div>
+        <div class="anatomy" aria-label="Kestrel 250M Instruct v1">
+          <div class="part"><span class="word">Kestrel</span><span class="tag"><b>Name</b>one per size</span></div>
+          <div class="part"><span class="word">250M</span><span class="tag"><b>Size</b>parameters</span></div>
+          <div class="part"><span class="word">Instruct</span><span class="tag"><b>Variant</b>Base or Instruct</span></div>
+          <div class="part"><span class="word">v1</span><span class="tag"><b>Version</b>generation</span></div>
+        </div>
+        <div class="anatomy-id"><span class="faint">huggingface.co/</span>Aulvero/Kestrel-250M-Instruct-v1</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cta">
+    <div class="wrap closing">
+      <h2>Follow the lineup as it trains.</h2>
+      <div class="closing-links">
+        <a class="btn" href="/models/">See all models <span aria-hidden="true">→</span></a>
+        <a class="btn-ghost" href={site.links.huggingFace}>Hugging Face</a>
+      </div>
+    </div>
+  </section>
+</Base>

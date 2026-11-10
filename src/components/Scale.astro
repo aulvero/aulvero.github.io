@@ -1,0 +1,82 @@
+---
+import { models, tiers } from "../data/models";
+import { STATUS_LABEL, fmtParams, modelStatus } from "../lib/models";
+
+const largest = models[models.length - 1];
+const lo = Math.log10(40e6);
+const hi = Math.log10(Math.max(1.1e9, largest.params * 1.2));
+const pos = (n: number) => ((Math.log10(n) - lo) / (hi - lo)) * 100;
+
+// Tier brackets span from the log-midpoint between neighbouring tiers.
+const bands = tiers.flatMap((tier) => {
+  const inTier = models.filter((m) => m.tier === tier.id);
+  if (!inTier.length) return [];
+  const first = inTier[0], last = inTier[inTier.length - 1];
+  const prev = models[models.indexOf(first) - 1];
+  const next = models[models.indexOf(last) + 1];
+  const gap = 0.6;
+  const start = prev ? (pos(prev.params) + pos(first.params)) / 2 + gap : 0;
+  const end = next ? (pos(last.params) + pos(next.params)) / 2 - gap : 100;
+  return [{ tier, start, width: end - start }];
+});
+
+const ticks = [50e6, 100e6, 200e6, 500e6, 1e9].filter((n) => Math.log10(n) <= hi);
+
+const marks = models.map((m, i) => {
+  const up = i % 2 === 0;
+  const h = Math.round((up ? 56 : 62) + (i / (models.length - 1)) * 30);
+  const p = pos(m.params);
+  return { m, up, h, p, status: modelStatus(m), flip: p > 88, delay: i * 60 };
+});
+---
+
+<figure class="figure">
+  <div class="scale-scroll">
+    <div class="scale" id="scale" role="list" aria-label="Models by size, logarithmic scale">
+      <div class="scale-axis"></div>
+      <div class="scale-beyond" aria-hidden="true"></div>
+      {bands.map((b) => (
+        <div class="scale-band" style={`left:${b.start}%;width:${b.width}%`} aria-hidden="true">
+          {b.tier.name} · {b.tier.range}
+        </div>
+      ))}
+      {ticks.map((n) => (
+        <div class="scale-tick" style={`left:${pos(n)}%`} aria-hidden="true"><span>{fmtParams(n)}</span></div>
+      ))}
+      {marks.map(({ m, up, h, p, status, flip, delay }) => (
+        <a
+          class:list={["scale-mark", up ? "up" : "down", { flip }, `is-${status}`]}
+          role="listitem"
+          href={`/models/${m.id}/`}
+          style={`left:${p}%;--h:${h}px;--d:${delay}ms`}
+          aria-label={`${m.name} ${fmtParams(m.params)}, ${STATUS_LABEL[status]}`}
+        >
+          <span class="stem"></span><span class="dot"></span>
+          <span class="label"><b>{m.name}</b><i>{fmtParams(m.params)}</i></span>
+        </a>
+      ))}
+    </div>
+  </div>
+  <figcaption class="figcaption">
+    <span><span class="fig-no">Fig. 1</span>Every model on a logarithmic scale. Each step is roughly 1.4× the one before it.</span>
+    <span class="faint">Select a model to open its page.</span>
+  </figcaption>
+</figure>
+
+<script>
+  const scale = document.getElementById("scale");
+  if (scale && "IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    scale.classList.add("is-waiting");
+    const reveal = () => {
+      scale.classList.remove("is-waiting");
+      scale.classList.add("is-animated");
+      io.disconnect();
+    };
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) reveal();
+    }, { threshold: 0.1 });
+    io.observe(scale);
+    // Never leave the figure hidden if the observer doesn't fire (e.g. in previews).
+    setTimeout(reveal, 4000);
+  }
+</script>

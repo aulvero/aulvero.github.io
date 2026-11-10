@@ -1,0 +1,36 @@
+---
+import { site } from "../data/models";
+interface Props { active: string }
+const { active } = Astro.props;
+---
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="wordmark" href="/" aria-label={`${site.name} home`}>{site.name}</a>
+    <nav class="nav" aria-label="Main">
+      <a href="/models/" aria-current={active === "models" ? "page" : undefined}>Models</a>
+      <a href="/docs/" aria-current={active === "docs" ? "page" : undefined}>Docs</a>
+      <a class="nav-ext" href={site.links.github}>GitHub</a>
+      <a class="nav-ext" href={site.links.huggingFace}>Hugging Face</a>
+      <button class="theme-toggle" type="button" aria-label="Toggle theme">
+        <svg class="i-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M13.5 9.6A5.8 5.8 0 0 1 6.4 2.5a5.8 5.8 0 1 0 7.1 7.1Z"></path></svg>
+        <svg class="i-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="3"></circle><path d="M8 1v1.6M8 13.4V15M1 8h1.6M13.4 8H15M3 3l1.1 1.1M11.9 11.9 13 13M3 13l1.1-1.1M11.9 4.1 13 3"></path></svg>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const root = document.documentElement;
+  const btn = document.querySelector<HTMLButtonElement>(".theme-toggle");
+  const current = () =>
+    root.dataset.theme ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const label = () => btn?.setAttribute("aria-label", current() === "dark" ? "Switch to light theme" : "Switch to dark theme");
+  label();
+  btn?.addEventListener("click", () => {
+    const next = current() === "dark" ? "light" : "dark";
+    root.dataset.theme = next;
+    try { localStorage.setItem("aulvero-theme", next); } catch {}
+    label();
+  });
+</script>

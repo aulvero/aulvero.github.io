@@ -1,0 +1,125 @@
+---
+import Base from "../../layouts/Base.astro";
+import Status from "../../components/Status.astro";
+import { models, tiers } from "../../data/models";
+import { coreVariants, fmtInt, fmtParams, indexOf, latest } from "../../lib/models";
+
+const defaultVariant = "instruct";
+---
+
+<Base title="Models" description="Every Aulvero model: sizes, tiers, variants and release status." active="models">
+  <section class="page-head">
+    <div class="wrap">
+      <h1>Models</h1>
+      <p>Every size in the lineup, grouped by tier. They all share one architecture and differ only in depth and width.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <span class="toolbar-label" id="tier-label">Tier</span>
+          <div class="seg" data-filter="tier" role="group" aria-labelledby="tier-label">
+            <button type="button" data-value="all" aria-pressed="true">All</button>
+            {tiers.map((t) => <button type="button" data-value={t.id} aria-pressed="false">{t.name}</button>)}
+          </div>
+        </div>
+        <div class="toolbar-group">
+          <span class="toolbar-label" id="variant-label">Status for</span>
+          <div class="seg" data-filter="variant" role="group" aria-labelledby="variant-label">
+            {coreVariants.map((v) => (
+              <button type="button" data-value={v.id} aria-pressed={v.id === defaultVariant ? "true" : "false"}>{v.name}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <table class="index" data-variant={defaultVariant}>
+        <thead>
+          <tr>
+            <th scope="col">No.</th>
+            <th scope="col">Model</th>
+            <th scope="col">Parameters</th>
+            <th scope="col">Layers × width</th>
+            <th scope="col">Context</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        {tiers.map((t) => (
+          <tbody data-tier={t.id}>
+            <tr class="tier-sep"><td colspan="6">{t.name}<span>{t.range} · {t.runsOn}</span></td></tr>
+            {models.filter((m) => m.tier === t.id).map((m) => {
+              const v = latest(m);
+              return (
+                <tr class="row">
+                  <td class="num">{String(indexOf(m)).padStart(2, "0")}</td>
+                  <td class="name">
+                    <a href={`/models/${m.id}/`}>{m.name}</a>
+                    <small>{m.summary}</small>
+                  </td>
+                  <td class="params">{fmtParams(m.params)}</td>
+                  <td class="dim">{m.config.layers} × {fmtInt(m.config.hidden)}</td>
+                  <td class="dim ctx">{fmtInt(m.context)}</td>
+                  <td class="status-cell">
+                    {coreVariants.map((cv) => (
+                      <span class="variant-status" data-for={cv.id}>
+                        <Status status={v.variants[cv.id] ?? "planned"} /> <span class="mono faint">{v.version}</span>
+                      </span>
+                    ))}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        ))}
+      </table>
+
+      <div class="legend" aria-label="Status legend">
+        {(["planned", "training", "released"] as const).map((s) => <Status status={s} />)}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const table = document.querySelector<HTMLTableElement>("table.index")!;
+  const params = new URLSearchParams(location.search);
+  const state: Record<string, string> = { tier: "all", variant: table.dataset.variant ?? "instruct" };
+
+  function apply() {
+    table.querySelectorAll<HTMLElement>("tbody[data-tier]").forEach((tb) => {
+      tb.hidden = state.tier !== "all" && tb.dataset.tier !== state.tier;
+    });
+    table.dataset.variant = state.variant;
+    document.querySelectorAll<HTMLElement>(".seg[data-filter]").forEach((seg) => {
+      seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === state[seg.dataset.filter!])));
+    });
+    const q = new URLSearchParams();
+    if (state.tier !== "all") q.set("tier", state.tier);
+    if (state.variant !== "instruct") q.set("variant", state.variant);
+    history.replaceState(null, "", q.size ? `?${q}` : location.pathname);
+  }
+
+  document.querySelectorAll<HTMLElement>(".seg[data-filter]").forEach((seg) => {
+    const key = seg.dataset.filter!;
+    const valid = [...seg.querySelectorAll("button")].map((b) => b.dataset.value);
+    const fromUrl = params.get(key);
+    if (fromUrl && valid.includes(fromUrl)) state[key] = fromUrl;
+    seg.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest("button");
+      if (!b) return;
+      state[key] = b.dataset.value!;
+      apply();
+    });
+  });
+
+  // Whole row is clickable; the name link stays the accessible target.
+  table.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("a")) return;
+    target.closest("tr.row")?.querySelector("a")?.click();
+  });
+
+  apply();
+</script>

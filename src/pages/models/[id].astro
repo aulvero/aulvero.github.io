@@ -1,0 +1,191 @@
+---
+import Base from "../../layouts/Base.astro";
+import Status from "../../components/Status.astro";
+import { architecture, models, site, type Model } from "../../data/models";
+import {
+  coreVariants, exactParams, fmtBytes, fmtInt, fmtParams, fmtTokens, indexOf, latest, pad2, repoId, tierOf,
+} from "../../lib/models";
+
+export function getStaticPaths() {
+  return models.map((model) => ({ params: { id: model.id }, props: { model } }));
+}
+
+interface Props { model: Model }
+const { model } = Astro.props;
+
+const i = models.indexOf(model);
+const prev = models[i - 1];
+const next = models[i + 1];
+const tier = tierOf(model);
+const size = fmtParams(model.params);
+const c = model.config;
+const exact = exactParams(model);
+const headDim = c.hidden / c.heads;
+const version = latest(model);
+const defaultVariant = "instruct";
+
+const specs: [string, string][] = [
+  ["Architecture", architecture.type],
+  ["Parameters", `${(exact / 1e6).toFixed(1)}M`],
+  ["Layers", String(c.layers)],
+  ["Hidden size", fmtInt(c.hidden)],
+  ["Attention heads", `${c.heads} query · ${c.kvHeads} key/value`],
+  ["Head dimension", String(headDim)],
+  ["Feed-forward size", fmtInt(c.ffn)],
+  ["Context length", `${fmtInt(model.context)} tokens`],
+  ["Vocabulary", fmtInt(architecture.vocab)],
+  ["Attention", architecture.attention],
+  ["QK norm", architecture.qkNorm],
+  ["Positions", architecture.positional],
+  ["Activation", architecture.activation],
+  ["Normalization", architecture.norm],
+  ["Embeddings", architecture.tiedEmbeddings ? "Tied input / output" : "Separate input / output"],
+  ["Languages", site.languages.join(", ")],
+  ["Training budget", `${fmtTokens(model.trainingTokens)} tokens`],
+  ["License", model.license],
+];
+
+const snippets = Object.fromEntries(coreVariants.map((v) => {
+  const id = repoId(model, v.id, version.version);
+  const code = v.id === "instruct"
+    ? `# pip install transformers torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_id = "${id}"
+tok = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id)
+
+messages = [{"role": "user", "content": "Explique les marées en deux phrases."}]
+inputs = tok.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
+out = model.generate(inputs, max_new_tokens=128)
+print(tok.decode(out[0][inputs.shape[-1]:], skip_special_tokens=True))`
+    : `# pip install transformers torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_id = "${id}"
+tok = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(model_id)
+
+inputs = tok("La marée monte parce que", return_tensors="pt")
+out = model.generate(**inputs, max_new_tokens=64)
+print(tok.decode(out[0], skip_special_tokens=True))`;
+  return [v.id, { id, code }];
+}));
+---
+
+<Base title={`${model.name} ${size}`} description={`${model.name} ${size}: ${model.summary} Specifications, variants and downloads.`} active="models">
+  <section class="model-hero">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <a href="/models/">Models</a> / <a href={`/models/?tier=${tier.id}`}>{tier.name}</a> / {model.name}
+      </nav>
+      <div class="model-hero-grid">
+        <div>
+          <div class="model-plate">No. {pad2(indexOf(model))} of {pad2(models.length)}</div>
+          <h1 class="model-title">{model.name}<span class="size">{size}</span></h1>
+          <p class="model-summary">{model.summary}</p>
+        </div>
+        <div class="model-controls">
+          <div class="seg" id="variant-seg" role="group" aria-label="Variant">
+            {coreVariants.map((v) => (
+              <button type="button" data-value={v.id} aria-pressed={v.id === defaultVariant ? "true" : "false"}>{v.name}</button>
+            ))}
+          </div>
+          <span class="toolbar-group"><span class="toolbar-label">Version</span><span class="version-pill">{version.version}</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section detail-section" data-variant={defaultVariant} id="detail">
+    <div class="wrap detail-grid">
+      <div>
+        <h2 class="block-title">Specifications</h2>
+        <dl class="specs">
+          {specs.map(([k, v]) => <div class="row"><dt>{k}</dt><dd>{v}</dd></div>)}
+        </dl>
+        <p class="note">Planned configuration for {version.version}. Final numbers are confirmed at release. See <a href="/docs/architecture/">Architecture</a>.</p>
+      </div>
+
+      <div>
+        {coreVariants.map((v) => {
+          const status = version.variants[v.id] ?? "planned";
+          const snip = snippets[v.id];
+          return (
+            <div class="variant-panel" data-for={v.id}>
+              <div class="variant-note">
+                <h3>{model.name} {size} {v.name} <Status status={status} /></h3>
+                <p>{v.description}</p>
+              </div>
+
+              <h2 class="block-title">Get the weights</h2>
+              <ul class="downloads">
+                <li>
+                  <span class="mono">{snip.id}</span>
+                  {status === "released"
+                    ? <a class="link-arrow" href={`https://huggingface.co/${snip.id}`}>Hugging Face →</a>
+                    : <span class="pending">Not yet released</span>}
+                </li>
+              </ul>
+
+              <h2 class="block-title">Quick start</h2>
+              <div class="code">
+                <button class="copy-btn" type="button">Copy</button>
+                <pre><code>{snip.code}</code></pre>
+              </div>
+              {status !== "released" && <p class="note">This snippet will work once {model.name} {v.name} is published.</p>}
+            </div>
+          );
+        })}
+
+        <h2 class="block-title">Footprint</h2>
+        <div class="footprint">
+          <div><b>{fmtBytes(exact * 2)}</b><span>BF16 weights</span></div>
+          <div><b>{fmtBytes(exact * 0.55)}</b><span>4-bit weights</span></div>
+          <div><b>{tier.name}</b><span>{tier.runsOn.split(",")[0]}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <nav class="neighbors" aria-label="Other models">
+        {prev ? <a href={`/models/${prev.id}/`}><span>← Smaller</span><b>{prev.name} {fmtParams(prev.params)}</b></a> : <span></span>}
+        {next ? <a class="next" href={`/models/${next.id}/`}><span>Larger →</span><b>{next.name} {fmtParams(next.params)}</b></a> : <span></span>}
+      </nav>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const detail = document.getElementById("detail")!;
+  const seg = document.getElementById("variant-seg")!;
+  const valid = [...seg.querySelectorAll("button")].map((b) => b.dataset.value);
+
+  function setVariant(v: string) {
+    detail.dataset.variant = v;
+    seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === v)));
+    const url = new URL(location.href);
+    if (v === "instruct") url.searchParams.delete("variant");
+    else url.searchParams.set("variant", v);
+    history.replaceState(null, "", url);
+  }
+
+  const initial = new URLSearchParams(location.search).get("variant");
+  if (initial && valid.includes(initial)) setVariant(initial);
+
+  seg.addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest("button");
+    if (b?.dataset.value) setVariant(b.dataset.value);
+  });
+
+  document.querySelectorAll<HTMLButtonElement>(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const code = btn.parentElement?.querySelector("code")?.textContent ?? "";
+      try {
+        await navigator.clipboard.writeText(code);
+        btn.textContent = "Copied";
+        setTimeout(() => (btn.textContent = "Copy"), 1400);
+      } catch {}
+    });
+  });
+</script>

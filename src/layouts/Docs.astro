@@ -1,0 +1,108 @@
+---
+import type { MarkdownHeading } from "astro";
+import Base from "./Base.astro";
+import { docHref, getDocs, groupDocs, type Doc } from "../lib/docs";
+
+interface Props {
+  doc: Doc;
+  headings: MarkdownHeading[];
+}
+
+const { doc, headings } = Astro.props;
+const docs = await getDocs();
+const i = docs.findIndex((d) => d.id === doc.id);
+const prev = docs[i - 1];
+const next = docs[i + 1];
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const editUrl = `https://github.com/aulvero/aulvero.github.io/edit/main/src/content/docs/${doc.id}.md`;
+---
+
+<Base title={doc.id === "index" ? "Docs" : `${doc.data.title} · Docs`} description={doc.data.description} active="docs">
+  <div class="wrap docs">
+    <aside class="docs-nav" aria-label="Documentation">
+      <details class="docs-nav-mobile">
+        <summary>{doc.data.title}<span aria-hidden="true">Menu</span></summary>
+        <nav>
+          {groupDocs(docs).map(([section, list]) => (
+            <div class="docs-nav-group">
+              <h2>{section}</h2>
+              <ul>{list.map((d) => <li><a href={docHref(d)} aria-current={d.id === doc.id ? "page" : undefined}>{d.data.title}</a></li>)}</ul>
+            </div>
+          ))}
+        </nav>
+      </details>
+      <nav class="docs-nav-desktop">
+        {groupDocs(docs).map(([section, list]) => (
+          <div class="docs-nav-group">
+            <h2>{section}</h2>
+            <ul>{list.map((d) => <li><a href={docHref(d)} aria-current={d.id === doc.id ? "page" : undefined}>{d.data.title}</a></li>)}</ul>
+          </div>
+        ))}
+      </nav>
+    </aside>
+
+    <article class="docs-main">
+      <header class="docs-head">
+        <p class="docs-section">{doc.data.section}</p>
+        <h1>{doc.data.title}</h1>
+        <p class="docs-lede">{doc.data.description}</p>
+      </header>
+      <div class="prose">
+        <slot />
+      </div>
+      <footer class="docs-foot">
+        <a class="docs-edit" href={editUrl}>Edit this page on GitHub</a>
+        <nav class="docs-pager" aria-label="Previous and next">
+          {prev ? <a href={docHref(prev)}><span>← Previous</span><b>{prev.data.title}</b></a> : <span></span>}
+          {next ? <a class="next" href={docHref(next)}><span>Next →</span><b>{next.data.title}</b></a> : <span></span>}
+        </nav>
+      </footer>
+    </article>
+
+    {toc.length > 1 && (
+      <aside class="docs-toc" aria-label="On this page">
+        <h2>On this page</h2>
+        <ul>
+          {toc.map((h) => <li class={`d${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}
+        </ul>
+      </aside>
+    )}
+  </div>
+</Base>
+
+<script>
+  // Highlight the section currently in view in "On this page".
+  const links = [...document.querySelectorAll<HTMLAnchorElement>(".docs-toc a")];
+  const targets = links
+    .map((a) => document.getElementById(decodeURIComponent(a.hash.slice(1))))
+    .filter((el): el is HTMLElement => !!el);
+  if (targets.length && "IntersectionObserver" in window) {
+    const visible = new Set<string>();
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => (e.isIntersecting ? visible.add(e.target.id) : visible.delete(e.target.id)));
+      const current = targets.find((t) => visible.has(t.id));
+      if (!current) return;
+      links.forEach((a) => a.classList.toggle("is-active", a.hash === `#${current.id}`));
+    }, { rootMargin: "-70px 0px -65% 0px" });
+    targets.forEach((t) => io.observe(t));
+  }
+
+  // Copy buttons on code blocks.
+  document.querySelectorAll<HTMLPreElement>(".prose pre").forEach((pre) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "copy-btn";
+    btn.textContent = "Copy";
+    btn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(pre.querySelector("code")?.textContent ?? pre.textContent ?? "");
+        btn.textContent = "Copied";
+        setTimeout(() => (btn.textContent = "Copy"), 1400);
+      } catch {}
+    });
+    const wrap = document.createElement("div");
+    wrap.className = "prose-code";
+    pre.replaceWith(wrap);
+    wrap.append(pre, btn);
+  });
+</script>

@@ -1,0 +1,41 @@
+---
+import { models, site } from "../data/models";
+import { fmtParams } from "../lib/models";
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <a class="wordmark" href="/">{site.name}</a>
+      <p>{site.tagline}.</p>
+    </div>
+    <nav aria-label="Models">
+      <h2>Models</h2>
+      <ul>
+        {models.slice(0, 5).map((m) => <li><a href={`/models/${m.id}/`}>{m.name} <span>{fmtParams(m.params)}</span></a></li>)}
+        <li><a href="/models/">All models →</a></li>
+      </ul>
+    </nav>
+    <nav aria-label="Resources">
+      <h2>Resources</h2>
+      <ul>
+        <li><a href="/docs/">Documentation</a></li>
+        <li><a href="/docs/architecture/">Architecture</a></li>
+        <li><a href="/docs/training/">Training guide</a></li>
+        <li><a href={site.links.trainingRepo}>Training code</a></li>
+      </ul>
+    </nav>
+    <nav aria-label="Elsewhere">
+      <h2>Elsewhere</h2>
+      <ul>
+        <li><a href={site.links.github}>GitHub</a></li>
+        <li><a href={site.links.huggingFace}>Hugging Face</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="wrap footer-base">
+    <span>© {year} {site.name}</span>
+    <span>Français · English</span>
+  </div>
+</footer>
