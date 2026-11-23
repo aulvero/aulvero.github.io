@@ -5,6 +5,9 @@ order: 4
 section: Training
 ---
 
+The commands and budgets below use an example configuration from the training code. They do not
+represent an announced or released model.
+
 ## Configs
 
 Every model has one file in `configs/` with three sections:
@@ -57,19 +60,11 @@ GPUS=8 bash scripts/pretrain.sh kestrel-250m \
   --resume checkpoints/kestrel-250m/pretrain/step-0020000.pt
 ```
 
-### Planned budgets
+### Example training budget
 
-| Model | Steps | Tokens / step | Total tokens |
+| Configuration | Steps | Tokens / step | Total tokens |
 |---|---:|---:|---:|
-| Wren 50M | 19,000 | 262,144 | 5.0B |
-| Finch 85M | 32,500 | 262,144 | 8.5B |
-| Robin 125M | 47,500 | 262,144 | 12.5B |
-| Lark 160M | 30,500 | 524,288 | 16.0B |
 | Kestrel 250M | 47,500 | 524,288 | 24.9B |
-| Osprey 350M | 67,000 | 524,288 | 35.1B |
-| Heron 500M | 47,500 | 1,048,576 | 49.8B |
-| Crane 700M | 67,000 | 1,048,576 | 70.3B |
-| Condor 900M | 86,000 | 1,048,576 | 90.2B |
 
 ## Fine-tuning
 
@@ -113,4 +108,4 @@ template included. Once uploaded, set the variant's status to `"released"` in th
 - Preference tuning (DPO) after fine-tuning
 - Code variant: continued pre-training on the `code` recipe with fill-in-the-middle
 - Context extension to 8K+ with RoPE scaling during the decay phase
-- An evaluation harness with French and English benchmarks
+- An evaluation harness for general language understanding and generation

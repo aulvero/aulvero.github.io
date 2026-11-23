@@ -53,8 +53,8 @@ const editUrl = `https://github.com/aulvero/aulvero.github.io/edit/main/src/cont
       <footer class="docs-foot">
         <a class="docs-edit" href={editUrl}>Edit this page on GitHub</a>
         <nav class="docs-pager" aria-label="Previous and next">
-          {prev ? <a href={docHref(prev)}><span>← Previous</span><b>{prev.data.title}</b></a> : <span></span>}
-          {next ? <a class="next" href={docHref(next)}><span>Next →</span><b>{next.data.title}</b></a> : <span></span>}
+          {prev ? <a href={docHref(prev)}><span>Previous</span><b>{prev.data.title}</b></a> : <span></span>}
+          {next ? <a class="next" href={docHref(next)}><span>Next</span><b>{next.data.title}</b></a> : <span></span>}
         </nav>
       </footer>
     </article>

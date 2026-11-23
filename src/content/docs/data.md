@@ -7,6 +7,9 @@ section: Training
 
 ## Recipes
 
+The recipes below describe the current training setup. They do not define the language scope of
+Aulvero as a whole; language coverage depends on each model’s training data and evaluation.
+
 A recipe is a YAML file in `data/mixes/` listing the Hugging Face datasets to stream and how many
 documents to take from each.
 
@@ -63,5 +66,5 @@ Fine-tuning reads a Hugging Face dataset or a local `.jsonl` file. Each row has 
 Roles are `system`, `user` and `assistant`. Conversations are formatted with ChatML, and the loss is
 computed on assistant replies only. `data/sft/example.jsonl` holds a few French and English examples.
 
-The default dataset (`HuggingFaceTB/smol-smoltalk`) is English. For the French side, add French
-conversations in the same format and point `finetune.dataset` at the combined file.
+The default dataset (`HuggingFaceTB/smol-smoltalk`) is English. To train on additional languages, add
+conversations in those languages using the same format and point `finetune.dataset` at the combined file.

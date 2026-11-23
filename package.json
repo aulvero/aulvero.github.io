@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
-  "description": "Website for Aulvero, compact French and English language models",
+  "description": "Website for Aulvero, general-purpose language models",
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",

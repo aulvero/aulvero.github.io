@@ -1,0 +1,40 @@
+---
+import Base from "../layouts/Base.astro";
+import Status from "../components/Status.astro";
+import { models, type Model } from "../data/models";
+import { fmtInt, fmtParams, fmtTokens, latest } from "../lib/models";
+const specs: [string, (model: Model) => string][] = [
+  ["Parameters (approx.)", (m) => fmtParams(m.params)],
+  ["Focus", () => "General purpose"],
+  ["Context", (m) => `${fmtInt(m.context)} tokens`],
+  ["Layers", (m) => String(m.config.layers)],
+  ["Hidden size", (m) => fmtInt(m.config.hidden)],
+  ["Training budget (planned)", (m) => `${fmtTokens(m.trainingTokens)} tokens`],
+  ["License", (m) => m.license === "TBA" ? "To be announced" : m.license],
+];
+---
+
+<Base title="Comparison" description="Aulvero model specifications, release status and benchmark availability." active="comparison">
+  <div class="wrap page">
+    <header class="page-head">
+      <h1>Comparison</h1>
+      <p>Capability and memory use, considered together.</p>
+    </header>
+    {models.length > 0 ? <div class="table-wrap" role="region" aria-label="Model specifications" tabindex="0">
+      <table>
+        <caption>Planned model specifications</caption>
+        <thead><tr><th scope="col">Specification</th>{models.map((m) => <th scope="col"><a href={`/models/${m.id}/`}>{m.name} {fmtParams(m.params)}</a></th>)}</tr></thead>
+        <tbody>
+          {specs.map(([label, value]) => <tr><th scope="row">{label}</th>{models.map((m) => <td>{value(m)}</td>)}</tr>)}
+          <tr><th scope="row">Base</th>{models.map((m) => <td><Status status={latest(m).variants.base ?? "planned"} /></td>)}</tr>
+          <tr><th scope="row">Instruct</th>{models.map((m) => <td><Status status={latest(m).variants.instruct ?? "planned"} /></td>)}</tr>
+        </tbody>
+      </table>
+    </div> : <section class="empty-state"><div class="empty-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></div><p class="eyebrow">Evidence comes first</p><h2>No results to compare yet.</h2><p>When models and evaluations are ready, this page will bring together quality, memory use, and the conditions behind each result.</p><a class="btn" href="/updates/quality-and-memory/">How we think about evaluation</a></section>}
+    <section class="text-section" aria-labelledby="benchmarks-title">
+      <h2 id="benchmarks-title">Benchmarks</h2>
+      <p>No evaluation results have been published yet. Benchmark results will be added when available, with the evaluation setup and comparison models.</p>
+      <a href="/docs/architecture/">Read about the architecture</a>
+    </section>
+  </div>
+</Base>

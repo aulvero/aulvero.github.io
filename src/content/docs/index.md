@@ -1,37 +1,19 @@
 ---
 title: Introduction
-description: What Aulvero is, how the model lineup is organised, and how to run the training code.
+description: Our focus, the current training code, and how to explore the project.
 order: 1
 section: Start here
 ---
 
-Aulvero trains compact bilingual language models for **French and English**, from 50 million to
-900 million parameters. These docs cover how the models are designed, what data they learn from, and
-how to train one yourself with [aulvero-train](https://github.com/aulvero/aulvero-train).
+Aulvero is a GitHub organization working toward **highly capable, small general-purpose language models with a lower memory footprint**.
 
-## The lineup
+There are **no models announced or released yet**. Follow [Updates](/updates/) for our direction and future progress.
 
-Nine sizes share one architecture. Each size has a bird name, smallest to largest.
+## About these docs
 
-| Model | Params | Tier | Layers × width | Context |
-|---|---:|---|---|---:|
-| Wren | 50M | Tiny | 20 × 384 | 2,048 |
-| Finch | 85M | Tiny | 21 × 512 | 2,048 |
-| Robin | 125M | Tiny | 27 × 576 | 2,048 |
-| Lark | 160M | Small | 29 × 640 | 4,096 |
-| Kestrel | 250M | Small | 26 × 896 | 4,096 |
-| Osprey | 350M | Small | 31 × 960 | 4,096 |
-| Heron | 500M | Medium | 31 × 1,152 | 4,096 |
-| Crane | 700M | Medium | 33 × 1,344 | 4,096 |
-| Condor | 900M | Medium | 33 × 1,536 | 4,096 |
+These pages describe the current training code, data recipes, and example configurations. They are technical references, not specifications for an announced model. Names such as `kestrel-250m` in commands refer to example configurations in the training repository.
 
-Each model ships in two variants:
-
-- **Base** is the raw pre-trained model, for your own fine-tuning.
-- **Instruct** is fine-tuned from Base to follow instructions and chat in French or English.
-
-A **Code** variant (continued pre-training on code) is planned. See [Naming](/#naming) for how
-names like `Kestrel-250M-Instruct-v1` are built.
+Model cards will appear on [Models](/models/) when there is a model to announce. Evaluation results will appear on [Comparison](/comparison/) when available.
 
 ## Repositories
 
@@ -39,7 +21,7 @@ names like `Kestrel-250M-Instruct-v1` are built.
 |---|---|
 | [aulvero-train](https://github.com/aulvero/aulvero-train) | Pre-training and fine-tuning code, model configs, data recipes |
 | [aulvero.github.io](https://github.com/aulvero/aulvero.github.io) | This website and these docs |
-| [huggingface.co/Aulvero](https://huggingface.co/Aulvero) | Released weights |
+| [huggingface.co/Aulvero](https://huggingface.co/Aulvero) | Future model releases |
 
 ## Quick start
 
@@ -56,10 +38,10 @@ Check the pipeline end to end on the small pilot mix before spending real comput
 
 ```bash
 make prepare MIX=pilot       # download, tokenizer, packed token files
-make pilot                   # 2,000-step run of a Wren-shaped model
+make pilot                   # 2,000-step pipeline check
 ```
 
-Then train a real model:
+To run the example training configuration:
 
 ```bash
 make prepare                                 # main French / English / code mix

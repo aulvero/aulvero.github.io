@@ -1,0 +1,39 @@
+---
+const cells = Array.from({ length: 64 }, (_, i) => i);
+---
+<section class="memory-study" aria-labelledby="memory-title">
+  <div class="study-heading"><span class="study-label">An interactive idea</span></div>
+  <h2 id="memory-title">A little memory<br />experiment.</h2>
+  <p>What changes when a model gets smaller?</p>
+  <div class="memory-reading"><output id="memory-result" for="model-size" aria-live="polite">2 GB</output><span>estimated weight memory</span></div>
+  <div class="memory-cells" aria-hidden="true">{cells.map((i) => <i class:list={{filled: i < 32}}></i>)}</div>
+  <div class="size-label"><label for="model-size">Example size</label><output id="size-result" for="model-size">1B parameters</output></div>
+  <input id="model-size" type="range" min="100" max="2000" step="100" value="1000" aria-describedby="memory-note" />
+  <div class="range-limits" aria-hidden="true"><span>100M</span><span>2B</span></div>
+  <div class="precision-control"><span id="precision-label">Precision</span><div role="group" aria-labelledby="precision-label">{[16, 8, 4].map((bits) => <button type="button" data-bits={bits} aria-pressed={bits === 16 ? "true" : "false"}>{bits}-bit</button>)}</div></div>
+  <p id="memory-note" class="study-note">Hypothetical example, not an Aulvero model. Weights only; cache and runtime need additional memory. Lower precision can affect quality.</p>
+  <noscript><p class="study-note">At 1B parameters and 16-bit precision, weights occupy approximately 2 GB. Enable JavaScript to explore other sizes.</p></noscript>
+</section>
+
+<script>
+  const study = document.querySelector<HTMLElement>(".memory-study");
+  const slider = study?.querySelector<HTMLInputElement>("#model-size");
+  const memory = study?.querySelector<HTMLOutputElement>("#memory-result");
+  const size = study?.querySelector<HTMLOutputElement>("#size-result");
+  const buttons = study?.querySelectorAll<HTMLButtonElement>("[data-bits]");
+  const cells = study?.querySelectorAll<HTMLElement>(".memory-cells i");
+  let bits = 16;
+  function update() {
+    if (!slider || !memory || !size) return;
+    const millions = Number(slider.value);
+    const megabytes = millions * bits / 8;
+    memory.value = megabytes >= 1000 ? `${Number((megabytes / 1000).toFixed(2))} GB` : `${megabytes} MB`;
+    size.value = `${millions >= 1000 ? `${Number((millions / 1000).toFixed(1))}B` : `${millions}M`} parameters`;
+    slider.setAttribute("aria-valuetext", size.value);
+    cells?.forEach((cell, i) => cell.classList.toggle("filled", i < Math.ceil(megabytes / 4000 * 64)));
+    buttons?.forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.bits) === bits)));
+  }
+  slider?.addEventListener("input", update);
+  buttons?.forEach((button) => button.addEventListener("click", () => { bits = Number(button.dataset.bits); update(); }));
+  update();
+</script>

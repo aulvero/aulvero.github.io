@@ -1,0 +1,13 @@
+---
+import Base from "../../layouts/Base.astro";
+import UpdateCard from "../../components/UpdateCard.astro";
+import { getUpdates } from "../../lib/updates";
+const updates = await getUpdates();
+---
+
+<Base title="Updates" description="News, perspectives and progress from Aulvero." active="updates">
+  <div class="wrap page updates-page">
+    <header class="page-head"><p class="eyebrow">From Aulvero</p><h1>Updates & ideas.</h1><p>Our direction, our thinking, and what comes next.</p></header>
+    <div class="updates-grid">{updates.map((update) => <UpdateCard update={update} />)}</div>
+  </div>
+</Base>

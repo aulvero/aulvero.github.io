@@ -12,4 +12,16 @@ const docs = defineCollection({
   }),
 });
 
-export const collections = { docs };
+const updates = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/updates" }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    date: z.coerce.date(),
+    category: z.string(),
+    artwork: z.enum(["focus", "measure"]),
+    order: z.number().default(0),
+  }),
+});
+
+export const collections = { docs, updates };

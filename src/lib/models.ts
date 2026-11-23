@@ -1,4 +1,4 @@
-import { architecture, models, site, tiers, variants, type Model, type ModelVersion, type Status, type VariantId } from "../data/models";
+import { architecture, site, variants, type Model, type ModelVersion, type Status, type VariantId } from "../data/models";
 
 export const STATUS_LABEL: Record<Status, string> = {
   planned: "Planned",
@@ -21,14 +21,7 @@ export function fmtTokens(n: number): string {
   return `${+(n / 1e9).toFixed(1)}B`;
 }
 
-export function fmtBytes(b: number): string {
-  if (b >= 1e9) return `${+(b / 1e9).toFixed(1)} GB`;
-  return `${Math.round(b / 1e6)} MB`;
-}
-
 export const fmtInt = (n: number) => n.toLocaleString("en-US");
-
-export const pad2 = (n: number) => String(n).padStart(2, "0");
 
 export const latest = (m: Model): ModelVersion => m.versions[m.versions.length - 1];
 
@@ -36,9 +29,7 @@ export function modelStatus(m: Model, version: ModelVersion = latest(m)): Status
   return Object.values(version.variants).reduce<Status>((best, s) => (s && RANK[s] > RANK[best] ? s : best), "planned");
 }
 
-export const tierOf = (m: Model) => tiers.find((t) => t.id === m.tier)!;
 export const variantOf = (id: VariantId) => variants.find((v) => v.id === id)!;
-export const indexOf = (m: Model) => models.indexOf(m) + 1;
 
 /** "Aulvero/Kestrel-250M-Instruct-v1" */
 export function repoId(m: Model, variant: VariantId, version: string): string {

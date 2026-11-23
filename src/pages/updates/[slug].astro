@@ -1,0 +1,24 @@
+---
+import { render, type CollectionEntry } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { getUpdates, formatDate } from "../../lib/updates";
+export async function getStaticPaths() {
+  return (await getUpdates()).map((update) => ({ params: { slug: update.id }, props: { update } }));
+}
+interface Props { update: CollectionEntry<"updates"> }
+const { update } = Astro.props;
+const { Content } = await render(update);
+---
+
+<Base title={update.data.title} description={update.data.description} active="updates">
+  <article class="wrap page update-article">
+    <header class="page-head">
+      <a class="breadcrumb" href="/updates/">All updates</a>
+      <div class="update-meta"><span>{update.data.category}</span><time datetime={update.data.date.toISOString()}>{formatDate(update.data.date)}</time></div>
+      <h1>{update.data.title}</h1>
+      <p>{update.data.description}</p>
+    </header>
+    <div class="prose"><Content /></div>
+    <footer class="article-footer"><span>Aulvero</span><a href="/updates/">More from Aulvero</a></footer>
+  </article>
+</Base>

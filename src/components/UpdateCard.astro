@@ -1,0 +1,20 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { formatDate } from "../lib/updates";
+interface Props { update: CollectionEntry<"updates"> }
+const { update } = Astro.props;
+---
+
+<a class="update-card" href={`/updates/${update.id}/`}>
+  <div class:list={["update-art", `art-${update.data.artwork}`]} aria-hidden="true">
+    {update.data.artwork === "focus" ? (
+      <div class="nested-squares"><i></i><i></i><i></i><i></i><b></b></div>
+    ) : (
+      <div class="measure-art"><span>capability</span><div><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span>footprint</span></div>
+    )}
+  </div>
+  <div class="update-meta"><span>{update.data.category}</span><time datetime={update.data.date.toISOString()}>{formatDate(update.data.date)}</time></div>
+  <h3>{update.data.title}</h3>
+  <p>{update.data.description}</p>
+  <span class="read-story">Read the story</span>
+</a>
